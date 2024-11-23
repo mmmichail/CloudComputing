@@ -1,0 +1,15 @@
+{
+  "version": 2,
+  "dgSpecHash": "y+T+mjc4XFt4KiPUv8fMq62YwZe2cgEmXMX99qlqnysFaejWucNe8+aMHaBPWUNilaGeF5MX5xJ6Ehe+s8DqBA==",
+  "success": false,
+  "projectFilePath": "C:\\Master\\Cloud\\CloudComputing\\CloudComputing\\CloudComputing.csproj",
+  "expectedPackageFiles": [],
+  "logs": [
+    {
+      "code": "NU1301",
+      "level": "Error",
+      "message": "Unable to load the service index for source https://repo.netcompany.com/artifactory/api/nuget/v3/lgvsaas-release-nuget/index.json.",
+      "libraryId": "Microsoft.VisualStudio.Azure.Containers.Tools.Targets"
+    }
+  ]
+}
