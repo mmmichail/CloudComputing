@@ -1,20 +1,24 @@
 {
   "format": 1,
   "restore": {
-    "C:\\Master\\Cloud\\CloudComputing\\CloudComputing\\CloudComputing.csproj": {}
+    "C:\\Masters\\Cloud\\CloudComputing\\CloudComputing\\CloudComputing\\CloudComputing.csproj": {}
   },
   "projects": {
-    "C:\\Master\\Cloud\\CloudComputing\\CloudComputing\\CloudComputing.csproj": {
+    "C:\\Masters\\Cloud\\CloudComputing\\CloudComputing\\CloudComputing\\CloudComputing.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "C:\\Master\\Cloud\\CloudComputing\\CloudComputing\\CloudComputing.csproj",
+        "projectUniqueName": "C:\\Masters\\Cloud\\CloudComputing\\CloudComputing\\CloudComputing\\CloudComputing.csproj",
         "projectName": "CloudComputing",
-        "projectPath": "C:\\Master\\Cloud\\CloudComputing\\CloudComputing\\CloudComputing.csproj",
-        "packagesPath": "C:\\Users\\mmich\\.nuget\\packages\\",
-        "outputPath": "C:\\Master\\Cloud\\CloudComputing\\CloudComputing\\obj\\",
+        "projectPath": "C:\\Masters\\Cloud\\CloudComputing\\CloudComputing\\CloudComputing\\CloudComputing.csproj",
+        "packagesPath": "C:\\Users\\maria\\.nuget\\packages\\",
+        "outputPath": "C:\\Masters\\Cloud\\CloudComputing\\CloudComputing\\CloudComputing\\obj\\",
         "projectStyle": "PackageReference",
+        "fallbackFolders": [
+          "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
+        ],
         "configFilePaths": [
-          "C:\\Users\\mmich\\AppData\\Roaming\\NuGet\\NuGet.Config",
+          "C:\\Users\\maria\\AppData\\Roaming\\NuGet\\NuGet.Config",
+          "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.FallbackLocation.config",
           "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.Offline.config"
         ],
         "originalTargetFrameworks": [
@@ -22,7 +26,7 @@
         ],
         "sources": {
           "C:\\Program Files (x86)\\Microsoft SDKs\\NuGetPackages\\": {},
-          "https://repo.netcompany.com/artifactory/api/nuget/v3/lgvsaas-release-nuget/index.json": {}
+          "https://api.nuget.org/v3/index.json": {}
         },
         "frameworks": {
           "net8.0": {
@@ -38,8 +42,9 @@
         "restoreAuditProperties": {
           "enableAudit": "true",
           "auditLevel": "low",
-          "auditMode": "direct"
-        }
+          "auditMode": "all"
+        },
+        "SdkAnalysisLevel": "9.0.100"
       },
       "frameworks": {
         "net8.0": {
@@ -48,6 +53,10 @@
             "Microsoft.VisualStudio.Azure.Containers.Tools.Targets": {
               "target": "Package",
               "version": "[1.19.6, )"
+            },
+            "PDFsharp": {
+              "target": "Package",
+              "version": "[6.1.1, )"
             },
             "Swashbuckle.AspNetCore": {
               "target": "Package",
@@ -73,7 +82,7 @@
               "privateAssets": "all"
             }
           },
-          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\8.0.202/PortableRuntimeIdentifierGraph.json"
+          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\9.0.100/PortableRuntimeIdentifierGraph.json"
         }
       }
     }

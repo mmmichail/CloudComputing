@@ -4,9 +4,14 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>@ViewData["Title"] - CloudComputingWeppApp</title>
+
+    <!-- Bootstrap CSS (make sure it's loaded first) -->
     <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
-    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+
+    <!-- Custom Styles (should be loaded after Bootstrap to override defaults) -->
     <link rel="stylesheet" href="~/CloudComputingWeppApp.styles.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+
 </head>
 <body>
     <header>
@@ -30,22 +35,27 @@
             </div>
         </nav>
     </header>
+
+    <!-- Main content area -->
     <div class="container">
         <main role="main" class="pb-3">
             @RenderBody()
         </main>
     </div>
 
+    <!-- Footer -->
     <footer class="border-top footer text-muted">
         <div class="container">
             &copy; 2024 - CloudComputingWeppApp - <a asp-area="" asp-page="/Privacy">Privacy</a>
         </div>
     </footer>
 
+    <!-- Script References (JavaScript files should be loaded last) -->
     <script src="~/lib/jquery/dist/jquery.min.js"></script>
     <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
     <script src="~/js/site.js" asp-append-version="true"></script>
 
+    <!-- Optional scripts for specific pages -->
     @await RenderSectionAsync("Scripts", required: false)
 </body>
 </html>

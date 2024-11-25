@@ -1,9 +1,8 @@
 ﻿using Microsoft.AspNetCore.Mvc;
-using System.Reflection.Metadata;
 using System.Text.RegularExpressions;
-using iText.Kernel.Pdf;
-using iText.Layout;
-using iText.Layout.Element;
+using PdfSharp.Pdf;
+using PdfSharp.Drawing;
+using CloudComputing.Models;
 
 namespace CloudComputing.Controllers
 {
@@ -12,9 +11,14 @@ namespace CloudComputing.Controllers
     public class PdfController : ControllerBase
     {
         [HttpPost]
-        public IActionResult GetPdf([FromBody] string text)
+        public IActionResult GetPdf([FromBody] RedactionRequest request)
         {
-            string redactedText = RedactSensitiveInformation(text);
+            if (string.IsNullOrEmpty(request?.Text))
+            {
+                return BadRequest("The text to redact is required.");
+            }
+
+            string redactedText = RedactSensitiveInformation(request.Text);
             byte[] pdfData = GeneratePdf(redactedText);
 
             return File(pdfData, "application/pdf", "redacted.pdf");
@@ -24,7 +28,7 @@ namespace CloudComputing.Controllers
         {
             var namePattern = @"\b[A-Z][a-z]+\s[A-Z][a-z]+\b"; 
             var emailPattern = @"[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}";
-            var addressPattern = @"\d{1,5}\s\w+(\s\w+)*,\s\w+(\s\w+)*,\s[A-Z]{2}\s\d{5}";
+            var addressPattern = @"(\d{1,5}\s[\w\s]+|\w+\s\d+)(,\s[\w\s]+)*";
 
             text = Regex.Replace(text, namePattern, "[REDACTED]");
             text = Regex.Replace(text, emailPattern, "[REDACTED]");
@@ -37,13 +41,13 @@ namespace CloudComputing.Controllers
         {
             using (var memoryStream = new MemoryStream())
             {
-                PdfWriter writer = new PdfWriter(memoryStream);
-                PdfDocument pdf = new PdfDocument(writer);
-                Document document = new Document(pdf);
-
-                document.Add(new Paragraph(redactedText));
-
-                document.Close();
+                PdfDocument document = new();
+                document.Info.Title = "Redacted PDF";
+                PdfPage page = document.AddPage();
+                XGraphics gfx = XGraphics.FromPdfPage(page);
+                XFont font = new("Verdana", 12);
+                gfx.DrawString(redactedText, font, XBrushes.Black, new XRect(0, 0, page.Width, page.Height), XStringFormats.TopLeft);
+                document.Save(memoryStream, false);
                 return memoryStream.ToArray();
             }
         }

@@ -1,10 +1,128 @@
 ﻿@page
-@model IndexModel
+@model CloudComputingWeppApp.Pages.IndexModel
 @{
-    ViewData["Title"] = "Home page";
+    ViewData["Title"] = "PDF Redaction";
 }
 
-<div class="text-center">
-    <h1 class="display-4">Welcome</h1>
-    <p>Learn about <a href="https://learn.microsoft.com/aspnet/core">building Web apps with ASP.NET Core</a>.</p>
-</div>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>@ViewData["Title"]</title>
+
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f9;
+            color: #333;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+
+        h1 {
+            color: #5c6bc0;
+            font-size: 2.5rem;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .form-container {
+            background-color: #ffffff;
+            padding: 25px;
+            border-radius: 8px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+            width: 100%;
+            max-width: 600px;
+        }
+
+        label {
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin-bottom: 10px;
+            display: block;
+        }
+
+        textarea {
+            width: 100%;
+            height: 150px;
+            padding: 12px;
+            font-size: 1rem;
+            border: 2px solid #ccc;
+            border-radius: 6px;
+            resize: vertical;
+            box-sizing: border-box;
+        }
+
+        button {
+            background-color: #5c6bc0;
+            color: #fff;
+            border: none;
+            padding: 12px 25px;
+            font-size: 1.1rem;
+            border-radius: 6px;
+            cursor: pointer;
+            width: 100%;
+            margin-top: 20px;
+        }
+
+        button:hover {
+            background-color: #3f51b5;
+        }
+
+        textarea::placeholder {
+            color: #888;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="form-container">
+        <h1>@ViewData["Title"]</h1>
+
+        <form method="post" asp-page-handler="Submit">
+            <label for="inputText">Enter text to redact and get pdf:</label>
+            <textarea id="inputText" asp-for="InputText" name="inputText" placeholder="Type your text here..."></textarea><br><br>
+
+            <button type="submit">Generate Redacted PDF</button>
+        </form>
+
+        <script>
+            function openPdfInNewTab() {
+                event.preventDefault();
+
+                var inputText = document.getElementById("inputText").value;
+
+                if (inputText.trim()) {
+                    var form = document.getElementById("pdfForm");
+                    var formData = new FormData(form);
+
+                    fetch(form.action, {
+                        method: "POST",
+                        body: formData,
+                    })
+                    .then(response => {
+                        if (response.ok) {
+                            return response.blob();
+                        } else {
+                            throw new Error('PDF generation failed');
+                        }
+                    })
+                    .then(blob => {
+                        var pdfUrl = URL.createObjectURL(blob);
+                        window.open(pdfUrl, '_blank');
+                    })
+                    .catch(error => {
+                        console.error(error);
+                    });
+                }
+            }
+        </script>
+    </div>
+
+</body>
+</html>
