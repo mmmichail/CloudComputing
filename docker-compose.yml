@@ -1,0 +1,22 @@
+version: '3.8'
+
+services:
+  web-api:
+    build:
+      context: ./CloudComputing
+    ports:
+      - "8080:80"
+    networks:
+      - my-network
+
+  web-app:
+    build:
+      context: ./CloudComputingWeppApp
+    ports:
+      - "8081:80"
+    networks:
+      - my-network
+
+networks:
+  my-network:
+    driver: bridge
