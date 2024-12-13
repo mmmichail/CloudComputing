@@ -1,0 +1,31 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: redaction
+spec:
+  replicas: 3  # Scale the redaction microservice to 3 replicas
+  selector:
+    matchLabels:
+      app: redaction
+  template:
+    metadata:
+      labels:
+        app: redaction
+    spec:
+      containers:
+      - name: redaction
+        image: myacr.azurecr.io/redaction:v1
+        ports:
+        - containerPort: 80
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: redaction
+spec:
+  selector:
+    app: redaction
+  ports:
+    - port: 80
+      targetPort: 80
+  type: LoadBalancer

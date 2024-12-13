@@ -1,11 +1,20 @@
-version: '3.8'
-
 services:
+  consul:
+    image: consul:latest
+    container_name: consul
+    ports:
+      - "8500:8500"  # Consul UI and API
+    networks:
+      - my-network
+    command: "consul agent -dev -client=0.0.0.0"
+
   web-api:
     build:
       context: ./CloudComputing
     ports:
       - "8080:80"
+    environment:
+      - CONSUL_URI=http://consul:8500
     networks:
       - my-network
 

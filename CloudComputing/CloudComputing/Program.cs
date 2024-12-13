@@ -1,13 +1,14 @@
 using Consul;
+using Microsoft.Extensions.Diagnostics.HealthChecks;
 
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddControllers();
 
-// Add Consul client
 var consulURI = Environment.GetEnvironmentVariable("CONSUL_URI");
-if(consulURI == null){
-    consulURI = "httl://consul:8500";
+if (consulURI == null)
+{
+    consulURI = "http://localhost:8500";
 }
 
 builder.Services.AddSingleton<IConsulClient, ConsulClient>(p => new ConsulClient(config =>
@@ -15,8 +16,13 @@ builder.Services.AddSingleton<IConsulClient, ConsulClient>(p => new ConsulClient
     config.Address = new Uri(consulURI);
 }));
 
+builder.Services.AddHealthChecks()
+    .AddCheck("self", () => HealthCheckResult.Healthy());
+
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
+
+builder.Services.AddHealthChecksUI().AddInMemoryStorage();
 
 var app = builder.Build();
 
@@ -32,7 +38,6 @@ app.UseAuthorization();
 
 app.MapControllers();
 
-// Register service with Consul
 var registrationID = Guid.NewGuid().ToString();
 
 app.Lifetime.ApplicationStarted.Register(() =>
@@ -43,16 +48,24 @@ app.Lifetime.ApplicationStarted.Register(() =>
         ID = registrationID,
         Name = "CloudComputing",
         Address = "localhost",
-        Port = 8080
+        Port = 8080,
+        Tags = new[] { "CloudComputingService" }
     };
     consulClient.Agent.ServiceRegister(registration).Wait();
 });
 
-// Deregister on shutdown
 app.Lifetime.ApplicationStopped.Register(() =>
 {
     var consulClient = app.Services.GetRequiredService<IConsulClient>();
     consulClient.Agent.ServiceDeregister(registrationID).Wait();
+});
+
+app.MapHealthChecks("/health");
+
+app.MapHealthChecksUI(options =>
+{
+    options.UIPath = "/health-ui";
+    options.ApiPath = "/health";
 });
 
 app.Run();

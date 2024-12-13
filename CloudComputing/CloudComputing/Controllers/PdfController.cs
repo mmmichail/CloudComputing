@@ -3,25 +3,76 @@ using System.Text.RegularExpressions;
 using PdfSharp.Pdf;
 using PdfSharp.Drawing;
 using CloudComputing.Models;
+using System.Text;
+using System.Security.Cryptography;
 
 namespace CloudComputing.Controllers
 {
     [ApiController]
-    [Route("api/getPdf")]
+    [Route("api/Pdf")]
     public class PdfController : ControllerBase
     {
-        [HttpPost]
-        public IActionResult GetPdf([FromBody] RedactionRequest request)
+        [HttpPost("CreatePdf")]
+        public IActionResult CreatePdf([FromBody] RedactionRequest request)
         {
             if (string.IsNullOrEmpty(request?.Text))
             {
                 return BadRequest("The text to redact is required.");
             }
 
+            string hash = GenerateHash(request.Text);
+            string pdfFilePath = Path.Combine("RedactedPdfs", $"{hash}.pdf");
+
             string redactedText = RedactSensitiveInformation(request.Text);
             byte[] pdfData = GeneratePdf(redactedText);
 
-            return File(pdfData, "application/pdf", "redacted.pdf");
+            Directory.CreateDirectory("RedactedPdfs");
+            System.IO.File.WriteAllBytes(pdfFilePath, pdfData);
+
+            var response = new RedactionResponse
+            {
+                Hash = hash,
+                Links = new List<Link>
+                {
+                    new Link
+                    {
+                        Rel = "get-pdf",
+                        Href = Url.Action(nameof(GetPdfByHash), "Pdf", new { hash }, Request.Scheme)
+                    }
+                }
+            };
+
+            return Ok(response);
+        }
+
+        [HttpPost("HashText")]
+        public IActionResult HashText([FromBody] RedactionRequest request)
+        {
+            if (string.IsNullOrEmpty(request?.Text))
+            {
+                return BadRequest("The text to redact is required.");
+            }
+
+            using (var sha256 = SHA256.Create())
+            {
+                byte[] bytes = sha256.ComputeHash(Encoding.UTF8.GetBytes(request.Text));
+                var response = new HashedText { Hash = Convert.ToBase64String(bytes) };
+                return Ok(response);
+            }
+        }
+
+        [HttpGet("GetPdf/{hash}")]
+        public IActionResult GetPdfByHash(string hash)
+        {
+            string pdfFilePath = Path.Combine("RedactedPdfs", $"{hash}.pdf");
+
+            if (!System.IO.File.Exists(pdfFilePath))
+            {
+                return NotFound("The requested PDF was not found.");
+            }
+
+            byte[] pdfData = System.IO.File.ReadAllBytes(pdfFilePath);
+            return File(pdfData, "application/pdf", $"{hash}.pdf");
         }
 
         private string RedactSensitiveInformation(string text)
@@ -49,6 +100,15 @@ namespace CloudComputing.Controllers
                 gfx.DrawString(redactedText, font, XBrushes.Black, new XRect(0, 0, page.Width, page.Height), XStringFormats.TopLeft);
                 document.Save(memoryStream, false);
                 return memoryStream.ToArray();
+            }
+        }
+
+        private string GenerateHash(string text)
+        {
+            using (var sha256 = System.Security.Cryptography.SHA256.Create())
+            {
+                byte[] hashBytes = sha256.ComputeHash(System.Text.Encoding.UTF8.GetBytes(text));
+                return BitConverter.ToString(hashBytes).Replace("-", "").ToLower();  // Returns a string representation of the hash
             }
         }
     }
