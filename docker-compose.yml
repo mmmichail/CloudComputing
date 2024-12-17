@@ -1,30 +1,41 @@
 services:
   consul:
-    image: consul:latest
+    image: hashicorp/consul:latest
     container_name: consul
     ports:
-      - "8500:8500"  # Consul UI and API
+      - "8500:8500"
     networks:
       - my-network
     command: "consul agent -dev -client=0.0.0.0"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8500/v1/status/leader"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   web-api:
     build:
-      context: ./CloudComputing
+      context: ./CloudComputing/CloudComputing
+      dockerfile: Dockerfile
     ports:
       - "8080:80"
-    environment:
-      - CONSUL_URI=http://consul:8500
     networks:
       - my-network
+    depends_on:
+      consul:
+        condition: service_healthy
+    environment:
+      - CONSUL_URI=http://consul:8500
 
   web-app:
     build:
-      context: ./CloudComputingWeppApp
+      context: ./CloudComputingWeppApp/CloudComputingWeppApp
     ports:
       - "8081:80"
     networks:
       - my-network
+    depends_on:
+      - web-api
 
 networks:
   my-network:

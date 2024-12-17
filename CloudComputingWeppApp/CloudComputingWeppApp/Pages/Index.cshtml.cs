@@ -15,38 +15,27 @@ namespace CloudComputingWeppApp.Pages
         public string GeneratedHash { get; set; }
         [BindProperty]
         public string InputHash { get; set; }
+        [BindProperty]
+        public List<string> PdfHashedList { get; set; }
 
         public IndexModel(IHttpClientFactory httpClientFactory)
         {
             _httpClientFactory = httpClientFactory;
         }
 
-        public async Task<IActionResult> OnPostAsync(string action)
+        public async Task<IActionResult> OnPostCreatePdfAsync()
         {
             if (!string.IsNullOrEmpty(InputText))
             {
                 var client = _httpClientFactory.CreateClient("RedactionService");
                 var jsonContent = new StringContent($"{{\"text\": \"{InputText}\"}}", Encoding.UTF8, "application/json");
 
-                if (action == "GenerateHash")
-                {
-                    var response = await client.PostAsync("api/Pdf/CreatePdf", jsonContent);
+                var response = await client.PostAsync("api/Pdf/CreatePdf", jsonContent);
 
-                    if (response.IsSuccessStatusCode)
-                    {
-                        var redactionResponse = await response.Content.ReadFromJsonAsync<RedactionResponse>();
-                        GeneratedHash = redactionResponse?.Hash;
-                    }
-                }
-                else if (action == "HashText")
+                if (response.IsSuccessStatusCode)
                 {
-                    var response = await client.PostAsync("api/Pdf/HashText", jsonContent);
-
-                    if (response.IsSuccessStatusCode)
-                    {
-                        var hashedText = await response.Content.ReadFromJsonAsync<HashedText>();
-                        GeneratedHash = hashedText?.Hash;
-                    }
+                    var redactionResponse = await response.Content.ReadFromJsonAsync<RedactionResponse>();
+                    GeneratedHash = redactionResponse?.Hash;
                 }
             }
 
@@ -70,6 +59,23 @@ namespace CloudComputingWeppApp.Pages
                 {
                     TempData["ErrorMessage"] = "Failed to retrieve PDF. Please check the hash.";
                 }
+            }
+
+            return Page();
+        }
+
+        public async Task<IActionResult> OnPostGetHashListAsync()
+        {
+            var client = _httpClientFactory.CreateClient("RedactionService");
+            var response = await client.GetAsync($"api/Pdf/ListPdfs");
+
+            if (response.IsSuccessStatusCode)
+            {
+                PdfHashedList = await response.Content.ReadFromJsonAsync<List<string>>();
+            }
+            else
+            {
+                TempData["ErrorMessage"] = "Failed to retrieve Hash List";
             }
 
             return Page();

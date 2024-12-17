@@ -15,7 +15,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("CloudComputingWeppApp")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+76e0ee97db71d10405690fb5dc627411e602c12e")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+c24014ecbfe5efe97b0650511b5e5ac38f5823db")]
 [assembly: System.Reflection.AssemblyProductAttribute("CloudComputingWeppApp")]
 [assembly: System.Reflection.AssemblyTitleAttribute("CloudComputingWeppApp")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

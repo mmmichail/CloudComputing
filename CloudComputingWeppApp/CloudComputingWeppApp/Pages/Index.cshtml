@@ -24,21 +24,42 @@
             height: 100vh;
         }
 
-        h1 {
-            color: #5c6bc0;
-            font-size: 2.5rem;
-            margin-bottom: 20px;
-            text-align: center;
+        .container {
+            display: flex;
+            flex-direction: row;
+            gap: 20px;
+            width: 90%;
+            max-width: 1200px;
         }
 
         .form-container {
+            flex: 2;
             background-color: #ffffff;
             padding: 25px;
             border-radius: 8px;
             box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
-            width: 100%;
-            max-width: 600px;
-            margin-bottom: 20px; /* Add space between the forms */
+            margin-bottom: 20px;
+        }
+
+        .hash-list-container {
+            flex: 1;
+            background-color: #ffffff;
+            padding: 25px;
+            border-radius: 8px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+            margin-bottom: 20px;
+            max-height: 600px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-start;
+        }
+
+        h1 {
+            color: #5c6bc0;
+            font-size: 2rem;
+            margin-bottom: 20px;
+            text-align: center;
         }
 
         label {
@@ -92,45 +113,89 @@
             background-color: #f8d7da;
             color: #721c24;
         }
+
+        .hash-list-container h3 {
+            font-size: 1.25rem;
+            color: #0d47a1;
+            margin-bottom: 10px;
+        }
+
+        .hash-list {
+            padding: 10px;
+            color: #0d47a1;
+        }
+
+            .hash-list ul {
+                list-style-type: none;
+                padding: 0;
+                margin: 0;
+            }
+
+            .hash-list li {
+                padding: 5px 0;
+                border-bottom: 1px solid #ccc;
+            }
+
+                .hash-list li:last-child {
+                    border-bottom: none;
+                }
     </style>
 </head>
 <body>
 
-    <div class="form-container">
-        <h1>@ViewData["Title"]</h1>
+    <div class="container">
+        <!-- Left Form Section -->
+        <div class="form-container">
+            <h1>@ViewData["Title"]</h1>
 
-        <!-- Form for generating PDF hash or hashing text -->
-        <form method="post">
-            <label for="inputText">Enter text:</label>
-            <textarea id="inputText" asp-for="InputText" placeholder="Type your text here..."></textarea>
+            <form method="post" asp-page-handler="CreatePdf">
+                <label for="inputText">Enter text:</label>
+                <textarea id="inputText" asp-for="InputText" placeholder="Type your text here..."></textarea>
 
-            <!-- Button for generating hash for PDF -->
-            <button type="submit" name="action" value="GenerateHash">Generate PDF Hash</button>
+                <button type="submit">Create Pdf</button>
+            </form>
 
-            <!-- Button for hashing the text -->
-            <button type="submit" name="action" value="HashText">Hash Text</button>
-        </form>
+            @if (!string.IsNullOrEmpty(Model.GeneratedHash))
+            {
+                <div class="alert alert-success">
+                    <strong>Generated Hash:</strong> @Model.GeneratedHash
+                </div>
+            }
 
-        @if (!string.IsNullOrEmpty(Model.GeneratedHash))
-        {
-            <div class="alert alert-success">
-                <strong>Generated Hash:</strong> @Model.GeneratedHash
-            </div>
-        }
+            <form method="post" asp-page-handler="GetPdfByHash">
+                <label for="inputHash">Enter hash to retrieve redacted PDF:</label>
+                <input type="text" id="inputHash" asp-for="InputHash" placeholder="Enter generated hash" />
 
-        <form method="post" asp-page-handler="GetPdfByHash">
-            <label for="inputHash">Enter hash to retrieve redacted PDF:</label>
-            <input type="text" id="inputHash" asp-for="InputHash" placeholder="Enter generated hash" />
+                <button type="submit">Get Redacted PDF</button>
+            </form>
 
-            <button type="submit">Get Redacted PDF</button>
-        </form>
+            @if (TempData["ErrorMessage"] != null)
+            {
+                <div class="alert alert-danger">
+                    @TempData["ErrorMessage"]
+                </div>
+            }
+        </div>
 
-        @if (TempData["ErrorMessage"] != null)
-        {
-            <div class="alert alert-danger">
-                @TempData["ErrorMessage"]
-            </div>
-        }
+        <!-- Right Hash List Section -->
+        <div class="hash-list-container">
+            <form method="post" asp-page-handler="GetHashList">
+                <button type="submit">Retrieve PDF Hash List</button>
+            </form>
+
+            @if (Model.PdfHashedList != null && Model.PdfHashedList.Any())
+            {
+                <div class="hash-list">
+                    <h3>Available PDF Hashes:</h3>
+                    <ul>
+                        @foreach (var hash in Model.PdfHashedList)
+                        {
+                            <li>@hash</li>
+                        }
+                    </ul>
+                </div>
+            }
+        </div>
     </div>
 
 </body>

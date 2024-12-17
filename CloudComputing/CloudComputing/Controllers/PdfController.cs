@@ -45,22 +45,6 @@ namespace CloudComputing.Controllers
             return Ok(response);
         }
 
-        [HttpPost("HashText")]
-        public IActionResult HashText([FromBody] RedactionRequest request)
-        {
-            if (string.IsNullOrEmpty(request?.Text))
-            {
-                return BadRequest("The text to redact is required.");
-            }
-
-            using (var sha256 = SHA256.Create())
-            {
-                byte[] bytes = sha256.ComputeHash(Encoding.UTF8.GetBytes(request.Text));
-                var response = new HashedText { Hash = Convert.ToBase64String(bytes) };
-                return Ok(response);
-            }
-        }
-
         [HttpGet("GetPdf/{hash}")]
         public IActionResult GetPdfByHash(string hash)
         {
@@ -73,6 +57,23 @@ namespace CloudComputing.Controllers
 
             byte[] pdfData = System.IO.File.ReadAllBytes(pdfFilePath);
             return File(pdfData, "application/pdf", $"{hash}.pdf");
+        }
+
+        [HttpGet("ListPdfs")]
+        public IActionResult ListPdfs()
+        {
+            string directoryPath = "RedactedPdfs";
+
+            if (!Directory.Exists(directoryPath))
+            {
+                return Ok(new List<string>());
+            }
+
+            var pdfFiles = Directory.GetFiles(directoryPath, "*.pdf")
+                                    .Select(Path.GetFileNameWithoutExtension)
+                                    .ToList();
+
+            return Ok(pdfFiles);
         }
 
         private string RedactSensitiveInformation(string text)
@@ -108,7 +109,7 @@ namespace CloudComputing.Controllers
             using (var sha256 = System.Security.Cryptography.SHA256.Create())
             {
                 byte[] hashBytes = sha256.ComputeHash(System.Text.Encoding.UTF8.GetBytes(text));
-                return BitConverter.ToString(hashBytes).Replace("-", "").ToLower();  // Returns a string representation of the hash
+                return BitConverter.ToString(hashBytes).Replace("-", "").ToLower();
             }
         }
     }
