@@ -71,7 +71,12 @@ namespace CloudComputingWeppApp.Pages
 
             if (response.IsSuccessStatusCode)
             {
-                PdfHashedList = await response.Content.ReadFromJsonAsync<List<string>>();
+                var pdfListResponse = await response.Content.ReadFromJsonAsync<PdfListResponse>();
+
+                if (pdfListResponse != null)
+                {
+                    PdfHashedList = pdfListResponse.PdfFiles;
+                }
             }
             else
             {

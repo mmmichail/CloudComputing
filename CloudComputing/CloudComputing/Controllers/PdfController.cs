@@ -1,10 +1,6 @@
 ﻿using Microsoft.AspNetCore.Mvc;
-using System.Text.RegularExpressions;
-using PdfSharp.Pdf;
-using PdfSharp.Drawing;
 using CloudComputing.Models;
-using System.Text;
-using System.Security.Cryptography;
+using CloudComputing.Services;
 
 namespace CloudComputing.Controllers
 {
@@ -12,95 +8,141 @@ namespace CloudComputing.Controllers
     [Route("api/Pdf")]
     public class PdfController : ControllerBase
     {
-        [HttpPost("CreatePdf")]
-        public IActionResult CreatePdf([FromBody] RedactionRequest request)
+        private readonly IRedactionService _redactionService;
+        private readonly IGeneratePdfService _generatePdfService;
+        private readonly ILogger<PdfController> _logger;
+
+        public PdfController(
+            IRedactionService redactionService,
+            IGeneratePdfService generatePdfService,
+            ILogger<PdfController> logger)
         {
-            if (string.IsNullOrEmpty(request?.Text))
+            _redactionService = redactionService;
+            _generatePdfService = generatePdfService;
+            _logger = logger;
+        }
+
+        [HttpPost("CreatePdf")]
+        public async Task<IActionResult> CreatePdf([FromBody] RedactionRequest request)
+        {
+            if (!ModelState.IsValid || string.IsNullOrEmpty(request?.Text))
             {
+                _logger.LogWarning("Invalid CreatePdf request received: {Request}", request);
                 return BadRequest("The text to redact is required.");
             }
 
-            string hash = GenerateHash(request.Text);
-            string pdfFilePath = Path.Combine("RedactedPdfs", $"{hash}.pdf");
-
-            string redactedText = RedactSensitiveInformation(request.Text);
-            byte[] pdfData = GeneratePdf(redactedText);
-
-            Directory.CreateDirectory("RedactedPdfs");
-            System.IO.File.WriteAllBytes(pdfFilePath, pdfData);
-
-            var response = new RedactionResponse
+            try
             {
-                Hash = hash,
-                Links = new List<Link>
-                {
-                    new Link
-                    {
-                        Rel = "get-pdf",
-                        Href = Url.Action(nameof(GetPdfByHash), "Pdf", new { hash }, Request.Scheme)
-                    }
-                }
-            };
+                _logger.LogInformation("Received request to create PDF for text: {Text}", request.Text);
 
-            return Ok(response);
+                string hash = GenerateHash(request.Text);
+                string pdfFilePath = Path.Combine("RedactedPdfs", $"{hash}.pdf");
+
+                string redactedText = _redactionService.RedactSensitiveInformation(request.Text);
+                byte[] pdfData = await _generatePdfService.GeneratePdfAsync(redactedText);
+
+                Directory.CreateDirectory("RedactedPdfs");
+                await System.IO.File.WriteAllBytesAsync(pdfFilePath, pdfData);
+
+                _logger.LogInformation("PDF successfully created and saved at: {FilePath}", pdfFilePath);
+
+                var response = new RedactionResponse
+                {
+                    Hash = hash,
+                    Links = new List<Link>
+                    {
+                        new Link
+                        {
+                            Rel = "get-pdf",
+                            Href = Url.Action(nameof(GetPdfByHash), "Pdf", new { hash }, Request.Scheme)
+                        },
+                        new Link
+                        {
+                            Rel = "list-pdfs",
+                            Href = Url.Action(nameof(ListPdfs), "Pdf", null, Request.Scheme)
+                        }
+                    }
+                };
+
+                return Ok(response);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "An error occurred while creating PDF.");
+                return StatusCode(500, "An internal error occurred while processing the request.");
+            }
         }
 
         [HttpGet("GetPdf/{hash}")]
-        public IActionResult GetPdfByHash(string hash)
+        public async Task<IActionResult> GetPdfByHash(string hash)
         {
-            string pdfFilePath = Path.Combine("RedactedPdfs", $"{hash}.pdf");
-
-            if (!System.IO.File.Exists(pdfFilePath))
+            try
             {
-                return NotFound("The requested PDF was not found.");
-            }
+                string pdfFilePath = Path.Combine("RedactedPdfs", $"{hash}.pdf");
 
-            byte[] pdfData = System.IO.File.ReadAllBytes(pdfFilePath);
-            return File(pdfData, "application/pdf", $"{hash}.pdf");
+                if (!System.IO.File.Exists(pdfFilePath))
+                {
+                    _logger.LogWarning("PDF with hash {Hash} not found.", hash);
+                    return NotFound("The requested PDF was not found.");
+                }
+
+                byte[] pdfData = await System.IO.File.ReadAllBytesAsync(pdfFilePath);
+
+                var response = new
+                {
+                    Links = new List<Link>
+                    {
+                        new Link
+                        {
+                            Rel = "self",
+                            Href = Url.Action(nameof(GetPdfByHash), "Pdf", new { hash }, Request.Scheme)
+                        },
+                        new Link
+                        {
+                            Rel = "list-pdfs",
+                            Href = Url.Action(nameof(ListPdfs), "Pdf", null, Request.Scheme)
+                        }
+                    }
+                };
+
+                return File(pdfData, "application/pdf", $"{hash}.pdf");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "An error occurred while retrieving PDF with hash {Hash}.", hash);
+                return StatusCode(500, "An internal error occurred while processing the request.");
+            }
         }
 
         [HttpGet("ListPdfs")]
         public IActionResult ListPdfs()
         {
-            string directoryPath = "RedactedPdfs";
-
-            if (!Directory.Exists(directoryPath))
+            try
             {
-                return Ok(new List<string>());
+                string directoryPath = "RedactedPdfs";
+
+                if (!Directory.Exists(directoryPath))
+                {
+                    _logger.LogWarning("Redacted PDFs directory does not exist.");
+                    return Ok(new { PdfFiles = new List<string>(), Links = GenerateDefaultLinks() });
+                }
+
+                var pdfFiles = Directory.GetFiles(directoryPath, "*.pdf")
+                                        .Select(Path.GetFileNameWithoutExtension)
+                                        .ToList();
+
+                var response = new
+                {
+                    PdfFiles = pdfFiles,
+                    Links = GenerateDefaultLinks()
+                };
+
+                return Ok(response);
             }
-
-            var pdfFiles = Directory.GetFiles(directoryPath, "*.pdf")
-                                    .Select(Path.GetFileNameWithoutExtension)
-                                    .ToList();
-
-            return Ok(pdfFiles);
-        }
-
-        private string RedactSensitiveInformation(string text)
-        {
-            var namePattern = @"\b[A-Z][a-z]+\s[A-Z][a-z]+\b"; 
-            var emailPattern = @"[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}";
-            var addressPattern = @"(\d{1,5}\s[\w\s]+|\w+\s\d+)(,\s[\w\s]+)*";
-
-            text = Regex.Replace(text, namePattern, "[REDACTED]");
-            text = Regex.Replace(text, emailPattern, "[REDACTED]");
-            text = Regex.Replace(text, addressPattern, "[REDACTED]");
-
-            return text;
-        }
-
-        private byte[] GeneratePdf(string redactedText)
-        {
-            using (var memoryStream = new MemoryStream())
+            catch (Exception ex)
             {
-                PdfDocument document = new();
-                document.Info.Title = "Redacted PDF";
-                PdfPage page = document.AddPage();
-                XGraphics gfx = XGraphics.FromPdfPage(page);
-                XFont font = new("Verdana", 12);
-                gfx.DrawString(redactedText, font, XBrushes.Black, new XRect(0, 0, page.Width, page.Height), XStringFormats.TopLeft);
-                document.Save(memoryStream, false);
-                return memoryStream.ToArray();
+                _logger.LogError(ex, "An error occurred while listing PDFs.");
+                return StatusCode(500, "An internal error occurred while processing the request.");
             }
         }
 
@@ -109,8 +151,26 @@ namespace CloudComputing.Controllers
             using (var sha256 = System.Security.Cryptography.SHA256.Create())
             {
                 byte[] hashBytes = sha256.ComputeHash(System.Text.Encoding.UTF8.GetBytes(text));
-                return BitConverter.ToString(hashBytes).Replace("-", "").ToLower();
+                string hash = BitConverter.ToString(hashBytes).Replace("-", "").ToLower();
+                return hash;
             }
+        }
+
+        private List<Link> GenerateDefaultLinks()
+        {
+            return new List<Link>
+            {
+                new Link
+                {
+                    Rel = "create-pdf",
+                    Href = Url.Action(nameof(CreatePdf), "Pdf", null, Request.Scheme)
+                },
+                new Link
+                {
+                    Rel = "list-pdfs",
+                    Href = Url.Action(nameof(ListPdfs), "Pdf", null, Request.Scheme)
+                }
+            };
         }
     }
 }

@@ -1,3 +1,4 @@
+using CloudComputing.Services;
 using Consul;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 
@@ -18,6 +19,9 @@ builder.Services.AddSingleton<IConsulClient, ConsulClient>(p => new ConsulClient
 
 builder.Services.AddHealthChecks()
     .AddCheck("self", () => HealthCheckResult.Healthy());
+
+builder.Services.AddScoped<IRedactionService, RedactionService>();
+builder.Services.AddScoped<IGeneratePdfService, GeneratePdfService>();
 
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
@@ -51,7 +55,7 @@ app.Lifetime.ApplicationStarted.Register(() =>
         Port = 8080,
         Tags = new[] { "CloudComputingService" }
     };
-    consulClient.Agent.ServiceRegister(registration).Wait();
+    //consulClient.Agent.ServiceRegister(registration).Wait();
 });
 
 app.Lifetime.ApplicationStopped.Register(() =>
